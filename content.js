@@ -1,4 +1,4 @@
-// Smart Auto Dark Mode content script
+// Smart per-page dark mode with exclusions
 browser.storage.local.get({ darkStart: 19, darkEnd: 7, excludedSites: "" }).then(settings => {
     const hour = new Date().getHours();
     const dark = (hour >= settings.darkStart || hour < settings.darkEnd);
@@ -13,38 +13,23 @@ browser.storage.local.get({ darkStart: 19, darkEnd: 7, excludedSites: "" }).then
     const hostname = window.location.hostname.toLowerCase();
     if (excluded.some(site => hostname.endsWith(site))) return;
 
-    // Skip sites that respect prefers-color-scheme
+    // If site already respects prefers-color-scheme, skip
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     if (prefersDark) return;
 
-    // Inject smart dark CSS
+    // Inject forced dark CSS
     const style = document.createElement('style');
-    style.id = 'smart-dark-mode-style';
+    style.id = 'auto-dark-mode-style';
     style.textContent = `
-        body, p, span, div, li, h1, h2, h3, h4, h5, h6, a {
-            background-color: #111 !important;
-            color: #eee !important;
-            border-color: #333 !important;
-        }
-        img, video, canvas, iframe, svg {
-            background-color: transparent !important;
-            color: inherit !important;
-        }
+        html, body { background-color: #111 !important; color: #eee !important; }
+        * { background-color: inherit !important; color: inherit !important; border-color: #333 !important; }
         a { color: #80c0ff !important; }
-        input, textarea, select, button {
-            background-color: #222 !important;
-            color: #eee !important;
-            border-color: #444 !important;
-        }
-        body, div, section, header, footer, article {
-            background-image: inherit !important;
-        }
     `;
     document.head.appendChild(style);
 
-    // Observe dynamic content (SPAs)
+    // Observe dynamic content for SPAs
     const observer = new MutationObserver(() => {
-        if (!document.getElementById('smart-dark-mode-style')) {
+        if (!document.getElementById('auto-dark-mode-style')) {
             document.head.appendChild(style);
         }
     });
